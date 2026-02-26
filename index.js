@@ -1,25 +1,31 @@
 const TelegramBot = require('node-telegram-bot-api');
 
-const token = process.env.BOT_TOKEN;
+const token = process.env.TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
-bot.on('message', (msg) => {
-  const chatId = msg.chat.id;
-  const text = msg.text.toLowerCase();
+bot.on("message", (msg) => {
+    const chatId = msg.chat.id;
+    const text = msg.text ? msg.text.toLowerCase() : "";
 
-  if (text === "hi" || text === "hello") {
-    bot.sendMessage(chatId, "Namaste 🙏 Welcome to Aroveda!\nType 'product' to see products.");
-  }
+    if (text.includes("hi") || text.includes("hello")) {
+        bot.sendMessage(chatId, "Namaste 🙏 Welcome to Aroveda Bot!\nAap kya dekhna chahte hain?\n\n1️⃣ Products\n2️⃣ Price\n3️⃣ Order");
+    }
 
-  else if (text === "product") {
-    bot.sendMessage(chatId, "🌿 Our Products:\n1. Herbal Face Wash\n2. Ayurvedic Hair Oil\n3. Skin Glow Cream");
-  }
+    else if (text.includes("product")) {
+        bot.sendMessage(chatId, "🌿 Hamare Products:\n\n1️⃣ Herbal Face Wash\n2️⃣ Aloe Vera Gel\n3️⃣ Ayurvedic Hair Oil");
+    }
 
-  else if (text === "price") {
-    bot.sendMessage(chatId, "💰 Price List:\nFace Wash - ₹199\nHair Oil - ₹299\nCream - ₹249");
-  }
+    else if (text.includes("price")) {
+        bot.sendMessage(chatId, "💰 Price List:\n\nFace Wash - ₹199\nAloe Vera Gel - ₹149\nHair Oil - ₹249");
+    }
 
-  else {
-    bot.sendMessage(chatId, "Please type:\n'hi' \n'product' \n'price'");
-  }
+    else if (text.includes("order")) {
+        bot.sendMessage(chatId, "📦 Order karne ke liye apna naam aur address bhejiye.");
+    }
+
+    else {
+        bot.sendMessage(chatId, "Please valid option likhiye:\nProduct / Price / Order");
+    }
 });
+
+console.log("Bot is running...");
