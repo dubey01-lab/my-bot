@@ -249,7 +249,9 @@ else if (userState[chatId] === "address") {
  // =====================
 // PHONE STEP
 // =====================
-else if (userState[chatId] === "phone") {
+ else if (userState[chatId] === "phone") {
+
+  text = text.trim();
 
   if (!/^[6-9][0-9]{9}$/.test(text)) {
     userAttempts[chatId]++;
@@ -257,7 +259,7 @@ else if (userState[chatId] === "phone") {
     if (userAttempts[chatId] >= 3) {
       delete userState[chatId];
       delete userAttempts[chatId];
-      bot.sendMessage(chatId, "❌ Too many invalid attempts. Order cancelled.", mainMenu);
+      bot.sendMessage(chatId, "❌ Too many invalid attempts. Order cancelled.");
       return;
     }
 
