@@ -15,6 +15,8 @@ app.listen(port, () => {
 
 const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
+// 🔐 ADMIN TELEGRAM ID
+const ADMIN_ID = 7370757451;  // 👈 apna real Telegram numeric ID daalo
 
 // =====================
 // MEMORY STORES
@@ -68,6 +70,37 @@ bot.on("message", (msg) => {
     return;
   }
 
+ // =====================
+// ADMIN STATUS UPDATE
+// =====================
+else if (text.startsWith("/update")) {
+
+  if (chatId !== ADMIN_ID) {
+    bot.sendMessage(chatId, "❌ You are not authorized.");
+    return;
+  }
+
+  const parts = text.split(" ");
+  const orderId = parts[1];
+  const newStatus = parts.slice(2).join(" ");
+
+  if (!orderId || !newStatus) {
+    bot.sendMessage(chatId, "Usage:\n/update ORDER_ID New Status");
+    return;
+  }
+
+  if (!orders[orderId]) {
+    bot.sendMessage(chatId, "❌ Order ID not found.");
+    return;
+  }
+
+  orders[orderId].status = newStatus;
+
+  bot.sendMessage(chatId,
+    `✅ Order ${orderId} updated to: ${newStatus}`
+  );
+}
+  
   // =====================
   // START
   // =====================
@@ -118,7 +151,7 @@ bot.on("message", (msg) => {
 
     if (orders[text]) {
       bot.sendMessage(chatId,
-        `📦 Order Found!\n\n🆔 ${text}\nName: ${orders[text].name}\nStatus: Confirmed ✅
+        `📦 Order Found!\n\n🆔 ${text}\nName: ${orders[text].name}\nStatus: ${orders[text].status}
         📅 Expected Delivery: ${orders[text].deliveryDate}`,
         mainMenu
       );
@@ -281,14 +314,15 @@ else if (userState[chatId] === "address") {
   userData[chatId].orderId = orderId;
 
   // ✅ Save Order
-  orders[orderId] = {
-    product: userData[chatId].product,
-    quantity: userData[chatId].quantity,
-    name: userData[chatId].name,
-    address: userData[chatId].address,
-    phone: userData[chatId].phone,
-    deliveryDate: userData[chatId].deliveryDate
-  };
+ orders[orderId] = {
+  product: userData[chatId].product,
+  quantity: userData[chatId].quantity,
+  name: userData[chatId].name,
+  address: userData[chatId].address,
+  phone: userData[chatId].phone,
+  deliveryDate: userData[chatId].deliveryDate,
+  status: "Confirmed ✅"
+};
 
   // ✅ Send Confirmation
   bot.sendMessage(chatId,
