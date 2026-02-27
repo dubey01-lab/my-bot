@@ -267,20 +267,27 @@ else if (userState[chatId] === "phone") {
 
   userData[chatId].phone = text;
 
-  const orderId = generateOrderId();
-  userData[chatId].orderId = orderId;
+// ✅ ADD THIS HERE
+const today = new Date();
+today.setDate(today.getDate() + 5);
+const deliveryDate = today.toDateString();
+userData[chatId].deliveryDate = deliveryDate;
+
+const orderId = generateOrderId();
+userData[chatId].orderId = orderId;
 
   // SAVE ORDER
   orders[orderId] = {
-    product: userData[chatId].product,
-    quantity: userData[chatId].quantity,
-    name: userData[chatId].name,
-    address: userData[chatId].address,
-    phone: userData[chatId].phone
-  };
+  product: userData[chatId].product,
+  quantity: userData[chatId].quantity,
+  name: userData[chatId].name,
+  address: userData[chatId].address,
+  phone: userData[chatId].phone,
+  deliveryDate: userData[chatId].deliveryDate
+}; 
 
   bot.sendMessage(chatId,
-    `✅ Order Confirmed!\n\n🆔 Order ID: ${orderId}\n\n🛍 Product: ${userData[chatId].product}\n🔢 Quantity: ${userData[chatId].quantity}\n\n👤 Name: ${userData[chatId].name}\n🏠 Address: ${userData[chatId].address}\n📞 Phone: ${userData[chatId].phone}\n\nPlease save your Order ID for future enquiry.`,
+    `✅ Order Confirmed!\n\n🆔 Order ID: ${orderId}\n\n🛍 Product: ${userData[chatId].product}\n🔢 Quantity: ${userData[chatId].quantity}\n\n👤 Name: ${userData[chatId].name}\n🏠 Address: ${userData[chatId].address}\n📞 Phone: ${userData[chatId].phone}\n📅 Expected Delivery: ${orders[text].deliveryDate}\nPlease save your Order ID for future enquiry.`,
     mainMenu
   );
 
