@@ -129,15 +129,67 @@ bot.on("message", (msg) => {
   }
 
   // =====================
-  // ORDER START
-  // =====================
-  else if (text === "📦 Order") {
-    userState[chatId] = "name";
-    userData[chatId] = {};
-    userAttempts[chatId] = 0;
-    bot.sendMessage(chatId, "📦 Please enter your Name:\n(Type 'cancel' to stop)");
+// ORDER START
+// =====================
+else if (text === "📦 Order") {
+
+  userState[chatId] = "selectProduct";
+  userData[chatId] = {};
+  userAttempts[chatId] = 0;
+
+  bot.sendMessage(chatId, "🛍 Please select a product:", {
+    reply_markup: {
+      keyboard: [
+        ["Herbal Face Wash"],
+        ["Ayurvedic Hair Oil"],
+        ["Skin Glow Cream"],
+        ["Cancel"]
+      ],
+      resize_keyboard: true
+    }
+  });
+}
+
+// =====================
+// PRODUCT SELECTION
+// =====================
+else if (userState[chatId] === "selectProduct") {
+
+  const products = [
+    "Herbal Face Wash",
+    "Ayurvedic Hair Oil",
+    "Skin Glow Cream"
+  ];
+
+  if (!products.includes(text)) {
+    bot.sendMessage(chatId, "❌ Please select product from buttons only.");
+    return;
   }
 
+  userData[chatId].product = text;
+  userState[chatId] = "quantity";
+
+  bot.sendMessage(chatId, "🔢 Enter quantity (1-5):");
+}
+
+// =====================
+// QUANTITY STEP
+// =====================
+else if (userState[chatId] === "quantity") {
+
+  const qty = parseInt(text);
+
+  if (isNaN(qty) || qty < 1 || qty > 5) {
+    bot.sendMessage(chatId, "❌ Enter valid quantity between 1 to 5.");
+    return;
+  }
+
+  userData[chatId].quantity = qty;
+  userState[chatId] = "name";
+
+  bot.sendMessage(chatId, "📛 Enter your Name:");
+}
+  
   // =====================
   // NAME STEP
   // =====================
@@ -194,44 +246,47 @@ else if (userState[chatId] === "address") {
   bot.sendMessage(chatId, "📞 Enter 10 digit Indian Phone Number:");
 }
 
-  // =====================
-  // PHONE STEP
-  // =====================
-  else if (userState[chatId] === "phone") {
+ // =====================
+// PHONE STEP
+// =====================
+else if (userState[chatId] === "phone") {
 
-    if (!/^[6-9][0-9]{9}$/.test(text)) {
-      userAttempts[chatId]++;
+  if (!/^[6-9][0-9]{9}$/.test(text)) {
+    userAttempts[chatId]++;
 
-      if (userAttempts[chatId] >= 3) {
-        delete userState[chatId];
-        bot.sendMessage(chatId, "❌ Too many invalid attempts. Order cancelled.", mainMenu);
-        return;
-      }
-
-      bot.sendMessage(chatId, "❌ Invalid phone. Must start with 6-9 and be 10 digits.");
+    if (userAttempts[chatId] >= 3) {
+      delete userState[chatId];
+      delete userAttempts[chatId];
+      bot.sendMessage(chatId, "❌ Too many invalid attempts. Order cancelled.", mainMenu);
       return;
     }
 
-    userData[chatId].phone = text;
-
-    const orderId = generateOrderId();
-    userData[chatId].orderId = orderId;
-
-    // SAVE ORDER
-    orders[orderId] = {
-      name: userData[chatId].name,
-      address: userData[chatId].address,
-      phone: userData[chatId].phone
-    };
-
-    bot.sendMessage(chatId,
-      `✅ Order Confirmed!\n\n🆔 Order ID: ${orderId}\n\nName: ${userData[chatId].name}\nAddress: ${userData[chatId].address}\nPhone: ${userData[chatId].phone}\n\nPlease save your Order ID for future enquiry.`,
-      mainMenu
-    );
-
-    delete userState[chatId];
-    delete userAttempts[chatId];
+    bot.sendMessage(chatId, "❌ Invalid phone. Must start with 6-9 and be 10 digits.");
+    return;
   }
+
+  userData[chatId].phone = text;
+
+  const orderId = generateOrderId();
+  userData[chatId].orderId = orderId;
+
+  // SAVE ORDER
+  orders[orderId] = {
+    product: userData[chatId].product,
+    quantity: userData[chatId].quantity,
+    name: userData[chatId].name,
+    address: userData[chatId].address,
+    phone: userData[chatId].phone
+  };
+
+  bot.sendMessage(chatId,
+    `✅ Order Confirmed!\n\n🆔 Order ID: ${orderId}\n\n🛍 Product: ${userData[chatId].product}\n🔢 Quantity: ${userData[chatId].quantity}\n\n👤 Name: ${userData[chatId].name}\n🏠 Address: ${userData[chatId].address}\n📞 Phone: ${userData[chatId].phone}\n\nPlease save your Order ID for future enquiry.`,
+    mainMenu
+  );
+
+  delete userState[chatId];
+  delete userAttempts[chatId];
+} 
 
   // =====================
   // DEFAULT
