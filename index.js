@@ -118,7 +118,8 @@ bot.on("message", (msg) => {
 
     if (orders[text]) {
       bot.sendMessage(chatId,
-        `📦 Order Found!\n\n🆔 ${text}\nName: ${orders[text].name}\nStatus: Confirmed ✅`,
+        `📦 Order Found!\n\n🆔 ${text}\nName: ${orders[text].name}\nStatus: Confirmed ✅
+        📅 Expected Delivery: ${orders[text].deliveryDate}`,
         mainMenu
       );
     } else {
