@@ -16,114 +16,193 @@ app.listen(port, () => {
 const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
-// User State Store
+// =====================
+// MEMORY STORES
+// =====================
 const userState = {};
 const userData = {};
+const userAttempts = {};
+const orders = {}; // orderId storage
 
-// Generate Order ID
+// =====================
+// GENERATE ORDER ID
+// =====================
 function generateOrderId() {
   const random = crypto.randomBytes(3).toString('hex').toUpperCase();
   return `ARV-${random}`;
 }
 
-// Main Menu
+// =====================
+// MAIN MENU
+// =====================
 const mainMenu = {
   reply_markup: {
     keyboard: [
       ["🛍 Products", "💰 Price"],
-      ["📦 Order", "ℹ About"]
+      ["📦 Order", "📦 Order Status"],
+      ["ℹ About"]
     ],
     resize_keyboard: true
   }
 };
 
+// =====================
+// MESSAGE HANDLER
+// =====================
 bot.on("message", (msg) => {
+
   const chatId = msg.chat.id;
   const text = msg.text ? msg.text.trim() : "";
 
   if (!text) return;
-
   const lowerText = text.toLowerCase();
 
-  // GLOBAL CANCEL SYSTEM
-  if (["cancel", "stop", "nahi", "exit"].includes(lowerText)) {
+  // =====================
+  // GLOBAL CANCEL
+  // =====================
+  if (["cancel", "stop", "exit", "nahi"].includes(lowerText)) {
     delete userState[chatId];
     delete userData[chatId];
+    delete userAttempts[chatId];
     bot.sendMessage(chatId, "❌ Order Cancelled.", mainMenu);
     return;
   }
 
+  // =====================
   // START
+  // =====================
   if (text === "/start") {
     delete userState[chatId];
     bot.sendMessage(chatId, "Namaste 🙏 Welcome to Aroveda Bot!", mainMenu);
   }
 
+  // =====================
   // PRODUCTS
+  // =====================
   else if (text === "🛍 Products") {
-    delete userState[chatId];
     bot.sendMessage(chatId,
       "🌿 Our Products:\n1. Herbal Face Wash\n2. Ayurvedic Hair Oil\n3. Skin Glow Cream",
       mainMenu
     );
   }
 
+  // =====================
   // PRICE
+  // =====================
   else if (text === "💰 Price") {
-    delete userState[chatId];
     bot.sendMessage(chatId,
       "💰 Price List:\nFace Wash - ₹199\nHair Oil - ₹249\nCream - ₹299",
       mainMenu
     );
   }
 
+  // =====================
   // ABOUT
+  // =====================
   else if (text === "ℹ About") {
-    delete userState[chatId];
     bot.sendMessage(chatId,
       "🌿 Aroveda is a natural Ayurvedic skincare brand.",
       mainMenu
     );
   }
 
+  // =====================
+  // ORDER STATUS CHECK
+  // =====================
+  else if (text === "📦 Order Status") {
+    userState[chatId] = "checkOrder";
+    bot.sendMessage(chatId, "Please enter your Order ID:");
+  }
+
+  else if (userState[chatId] === "checkOrder") {
+
+    if (orders[text]) {
+      bot.sendMessage(chatId,
+        `📦 Order Found!\n\n🆔 ${text}\nName: ${orders[text].name}\nStatus: Confirmed ✅`,
+        mainMenu
+      );
+    } else {
+      bot.sendMessage(chatId, "❌ Order ID not found.", mainMenu);
+    }
+
+    delete userState[chatId];
+  }
+
+  // =====================
   // ORDER START
+  // =====================
   else if (text === "📦 Order") {
     userState[chatId] = "name";
     userData[chatId] = {};
+    userAttempts[chatId] = 0;
     bot.sendMessage(chatId, "📦 Please enter your Name:\n(Type 'cancel' to stop)");
   }
 
+  // =====================
   // NAME STEP
+  // =====================
   else if (userState[chatId] === "name") {
 
-    if (text.length < 2 || text.length > 30) {
-      bot.sendMessage(chatId, "❌ Please enter a valid name.");
+    if (!/^[A-Za-z ]{2,30}$/.test(text)) {
+      userAttempts[chatId]++;
+
+      if (userAttempts[chatId] >= 3) {
+        delete userState[chatId];
+        bot.sendMessage(chatId, "❌ Too many invalid attempts. Order cancelled.", mainMenu);
+        return;
+      }
+
+      bot.sendMessage(chatId, "❌ Enter valid name (letters only).");
       return;
     }
 
     userData[chatId].name = text;
     userState[chatId] = "address";
+    userAttempts[chatId] = 0;
+
     bot.sendMessage(chatId, "🏠 Please enter your Address:");
   }
 
+  // =====================
   // ADDRESS STEP
+  // =====================
   else if (userState[chatId] === "address") {
 
-    if (text.length < 5) {
-      bot.sendMessage(chatId, "❌ Please enter a valid address.");
+    if (text.length < 10) {
+      userAttempts[chatId]++;
+
+      if (userAttempts[chatId] >= 3) {
+        delete userState[chatId];
+        bot.sendMessage(chatId, "❌ Too many invalid attempts. Order cancelled.", mainMenu);
+        return;
+      }
+
+      bot.sendMessage(chatId, "❌ Enter complete address.");
       return;
     }
 
     userData[chatId].address = text;
     userState[chatId] = "phone";
-    bot.sendMessage(chatId, "📞 Please enter your 10 digit Phone Number:");
+    userAttempts[chatId] = 0;
+
+    bot.sendMessage(chatId, "📞 Enter 10 digit Indian Phone Number:");
   }
 
+  // =====================
   // PHONE STEP
+  // =====================
   else if (userState[chatId] === "phone") {
 
-    if (!/^[0-9]{10}$/.test(text)) {
-      bot.sendMessage(chatId, "❌ Invalid phone number. Please enter 10 digit number only.");
+    if (!/^[6-9][0-9]{9}$/.test(text)) {
+      userAttempts[chatId]++;
+
+      if (userAttempts[chatId] >= 3) {
+        delete userState[chatId];
+        bot.sendMessage(chatId, "❌ Too many invalid attempts. Order cancelled.", mainMenu);
+        return;
+      }
+
+      bot.sendMessage(chatId, "❌ Invalid phone. Must start with 6-9 and be 10 digits.");
       return;
     }
 
@@ -132,21 +211,32 @@ bot.on("message", (msg) => {
     const orderId = generateOrderId();
     userData[chatId].orderId = orderId;
 
+    // SAVE ORDER
+    orders[orderId] = {
+      name: userData[chatId].name,
+      address: userData[chatId].address,
+      phone: userData[chatId].phone
+    };
+
     bot.sendMessage(chatId,
       `✅ Order Confirmed!\n\n🆔 Order ID: ${orderId}\n\nName: ${userData[chatId].name}\nAddress: ${userData[chatId].address}\nPhone: ${userData[chatId].phone}\n\nPlease save your Order ID for future enquiry.`,
       mainMenu
     );
 
     delete userState[chatId];
+    delete userAttempts[chatId];
   }
 
+  // =====================
   // DEFAULT
+  // =====================
   else {
     bot.sendMessage(chatId,
       "Please select an option from menu below 👇",
       mainMenu
     );
   }
+
 });
 
 console.log("Bot is running...");
