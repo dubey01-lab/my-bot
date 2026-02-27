@@ -251,7 +251,6 @@ else if (userState[chatId] === "address") {
 // =====================
  else if (userState[chatId] === "phone") {
 
-  text = text.trim();
 
   if (!/^[6-9][0-9]{9}$/.test(text)) {
     userAttempts[chatId] = (userAttempts[chatId] || 0) + 1;
