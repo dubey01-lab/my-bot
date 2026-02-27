@@ -288,6 +288,20 @@ else if (userState[chatId] === "phone") {
   delete userAttempts[chatId];
 } 
 
+// =====================
+// SMART AUTO REPLY
+// =====================
+else if (lowerText.includes("kab ayega") || 
+         lowerText.includes("kab aayega") ||
+         lowerText.includes("delivery") ||
+         lowerText.includes("order kab")) {
+
+  bot.sendMessage(chatId,
+    "📦 Delivery usually takes 3-5 working days.\n\nTo check exact status, click '📦 Order Status' and enter your Order ID.",
+    mainMenu
+  );
+}
+  
   // =====================
   // DEFAULT
   // =====================
