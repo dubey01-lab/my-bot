@@ -164,29 +164,35 @@ bot.on("message", (msg) => {
   }
 
   // =====================
-  // ADDRESS STEP
-  // =====================
-  else if (userState[chatId] === "address") {
+// ADDRESS STEP (STRONG VALIDATION)
+// =====================
+else if (userState[chatId] === "address") {
 
-    if (text.length < 10) {
-      userAttempts[chatId]++;
+  // Only letters, numbers, space, comma, dash, slash allowed
+  const addressRegex = /^[A-Za-z0-9 ,\-\/]{10,100}$/;
 
-      if (userAttempts[chatId] >= 3) {
-        delete userState[chatId];
-        bot.sendMessage(chatId, "❌ Too many invalid attempts. Order cancelled.", mainMenu);
-        return;
-      }
+  if (!addressRegex.test(text)) {
+    userAttempts[chatId]++;
 
-      bot.sendMessage(chatId, "❌ Enter complete address.");
+    if (userAttempts[chatId] >= 3) {
+      delete userState[chatId];
+      delete userAttempts[chatId];
+      bot.sendMessage(chatId, "❌ Too many invalid attempts. Order cancelled.", mainMenu);
       return;
     }
 
-    userData[chatId].address = text;
-    userState[chatId] = "phone";
-    userAttempts[chatId] = 0;
-
-    bot.sendMessage(chatId, "📞 Enter 10 digit Indian Phone Number:");
+    bot.sendMessage(chatId, 
+      "❌ Invalid address.\nUse letters, numbers, comma or dash only.\nMinimum 10 characters."
+    );
+    return;
   }
+
+  userData[chatId].address = text;
+  userState[chatId] = "phone";
+  userAttempts[chatId] = 0;
+
+  bot.sendMessage(chatId, "📞 Enter 10 digit Indian Phone Number:");
+}
 
   // =====================
   // PHONE STEP
