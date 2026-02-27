@@ -343,6 +343,24 @@ Please save your Order ID.`,
   mainMenu
   );
 
+// =====================
+// 🔔 ADMIN NOTIFICATION
+// =====================
+bot.sendMessage(ADMIN_ID,
+`🆕 NEW ORDER RECEIVED!
+
+🆔 Order ID: ${orderId}
+
+🛍 Product: ${userData[chatId].product}
+🔢 Quantity: ${userData[chatId].quantity}
+
+👤 Name: ${userData[chatId].name}
+🏠 Address: ${userData[chatId].address}
+📞 Phone: ${userData[chatId].phone}
+
+📅 Delivery: ${deliveryDate}`
+);
+   
   delete userState[chatId];
   delete userAttempts[chatId];
 }
