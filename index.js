@@ -254,7 +254,7 @@ else if (userState[chatId] === "address") {
   text = text.trim();
 
   if (!/^[6-9][0-9]{9}$/.test(text)) {
-    userAttempts[chatId]++;
+    userAttempts[chatId] = (userAttempts[chatId] || 0) + 1;
 
     if (userAttempts[chatId] >= 3) {
       delete userState[chatId];
@@ -267,35 +267,51 @@ else if (userState[chatId] === "address") {
     return;
   }
 
+  // ✅ VALID PHONE
   userData[chatId].phone = text;
 
-// ✅ ADD THIS HERE
-const today = new Date();
-today.setDate(today.getDate() + 5);
-const deliveryDate = today.toDateString();
-userData[chatId].deliveryDate = deliveryDate;
+  // ✅ Calculate delivery date
+  const today = new Date();
+  today.setDate(today.getDate() + 5);
+  const deliveryDate = today.toDateString();
+  userData[chatId].deliveryDate = deliveryDate;
 
-const orderId = generateOrderId();
-userData[chatId].orderId = orderId;
+  // ✅ Generate Order ID
+  const orderId = generateOrderId();
+  userData[chatId].orderId = orderId;
 
-  // SAVE ORDER
+  // ✅ Save Order
   orders[orderId] = {
-  product: userData[chatId].product,
-  quantity: userData[chatId].quantity,
-  name: userData[chatId].name,
-  address: userData[chatId].address,
-  phone: userData[chatId].phone,
-  deliveryDate: userData[chatId].deliveryDate
-}; 
+    product: userData[chatId].product,
+    quantity: userData[chatId].quantity,
+    name: userData[chatId].name,
+    address: userData[chatId].address,
+    phone: userData[chatId].phone,
+    deliveryDate: userData[chatId].deliveryDate
+  };
 
+  // ✅ Send Confirmation
   bot.sendMessage(chatId,
-    `✅ Order Confirmed!\n\n🆔 Order ID: ${orderId}\n\n🛍 Product: ${userData[chatId].product}\n🔢 Quantity: ${userData[chatId].quantity}\n\n👤 Name: ${userData[chatId].name}\n🏠 Address: ${userData[chatId].address}\n📞 Phone: ${userData[chatId].phone}\n📅 Expected Delivery: ${orders[text].deliveryDate}\nPlease save your Order ID for future enquiry.`,
-    mainMenu
+`✅ Order Confirmed!
+
+🆔 Order ID: ${orderId}
+
+🛍 Product: ${userData[chatId].product}
+🔢 Quantity: ${userData[chatId].quantity}
+
+👤 Name: ${userData[chatId].name}
+🏠 Address: ${userData[chatId].address}
+📞 Phone: ${userData[chatId].phone}
+
+📅 Expected Delivery: ${deliveryDate}
+
+Please save your Order ID.`,
+  mainMenu
   );
 
   delete userState[chatId];
   delete userAttempts[chatId];
-} 
+}
 
 // =====================
 // SMART AUTO REPLY
