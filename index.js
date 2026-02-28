@@ -2,6 +2,12 @@ const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
 const crypto = require('crypto');
 
+const OpenAI = require("openai");
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
 const app = express();
 const port = process.env.PORT || 3000;
 
