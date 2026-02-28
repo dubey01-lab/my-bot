@@ -21,6 +21,31 @@ app.listen(port, () => {
 
 const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
+
+bot.onText(/\/generate/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: "Generate an Instagram post for Ayurveda skincare brand. Include hook, 3 value points, CTA and 10 SEO hashtags."
+        }
+      ],
+    });
+
+    const content = completion.choices[0].message.content;
+
+    bot.sendMessage(chatId, content);
+
+  } catch (error) {
+    console.log(error);
+    bot.sendMessage(chatId, "Error generating content.");
+  }
+});
+
 // 🔐 ADMIN TELEGRAM ID
 const ADMIN_ID = 7370757451;  // 👈 apna real Telegram numeric ID daalo
 
