@@ -4,6 +4,8 @@ const crypto = require('crypto');
 
 const axios = require("axios");
 
+const cron = require("node-cron");
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -50,6 +52,10 @@ bot.onText(/\/generate/, async (msg) => {
     console.log(error.response?.data || error.message);
     bot.sendMessage(chatId, "Error generating content.");
   }
+});
+
+cron.schedule("* * * * *", () => {
+  console.log("Cron is running every minute");
 });
 
 // 🔐 ADMIN TELEGRAM ID
