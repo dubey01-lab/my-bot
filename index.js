@@ -1,16 +1,14 @@
 const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
 const crypto = require('crypto');
-
 const axios = require("axios");
-
 const cron = require("node-cron");
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-  res.send('Bot is running!');
+  res.send('Aroveda Bot is running!');
 });
 
 app.listen(port, () => {
@@ -20,50 +18,8 @@ app.listen(port, () => {
 const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
-bot.on("message", (msg) => {
-  bot.sendMessage(msg.chat.id, "Bot is alive ✅");
-});
-
-bot.onText(/\/generate/, async (msg) => {
-  const chatId = msg.chat.id;
-
-  try {
-    const response = await axios.post(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          {
-            role: "user",
-            content:
-              "Generate an Instagram post for Ayurveda skincare brand. Include hook, 3 benefits, CTA and 10 SEO hashtags.",
-          },
-        ],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    const content = response.data.choices[0].message.content;
-
-    bot.sendMessage(chatId, content);
-
-  } catch (error) {
-    console.log(error.response?.data || error.message);
-    bot.sendMessage(chatId, "Error generating content.");
-  }
-});
-
-cron.schedule("* * * * *", () => {
-  console.log("Cron is running every minute");
-});
-
 // 🔐 ADMIN TELEGRAM ID
-const ADMIN_ID = 7370757451;  // 👈 apna real Telegram numeric ID daalo
+const ADMIN_ID = 7370757451;
 
 // =====================
 // MEMORY STORES
@@ -71,7 +27,7 @@ const ADMIN_ID = 7370757451;  // 👈 apna real Telegram numeric ID daalo
 const userState = {};
 const userData = {};
 const userAttempts = {};
-const orders = {}; // orderId storage
+const orders = {};
 
 // =====================
 // GENERATE ORDER ID
@@ -96,6 +52,21 @@ const mainMenu = {
 };
 
 // =====================
+// START COMMAND
+// =====================
+bot.onText(/\/start/, (msg) => {
+  const chatId = msg.chat.id;
+
+  bot.sendMessage(chatId,
+`🌿 Namaste! Welcome to AROVEDA
+
+Your trusted Ayurvedic skincare brand.
+
+Use the menu below to explore our products.`,
+  mainMenu);
+});
+
+// =====================
 // MESSAGE HANDLER
 // =====================
 bot.on("message", (msg) => {
@@ -107,7 +78,7 @@ bot.on("message", (msg) => {
   const lowerText = text.toLowerCase();
 
   // =====================
-  // GLOBAL CANCEL
+  // CANCEL
   // =====================
   if (["cancel", "stop", "exit", "nahi"].includes(lowerText)) {
     delete userState[chatId];
@@ -117,52 +88,21 @@ bot.on("message", (msg) => {
     return;
   }
 
- // =====================
-// ADMIN STATUS UPDATE
-// =====================
-else if (text.startsWith("/update")) {
-
-  if (chatId !== ADMIN_ID) {
-    bot.sendMessage(chatId, "❌ You are not authorized.");
-    return;
-  }
-
-  const parts = text.split(" ");
-  const orderId = parts[1];
-  const newStatus = parts.slice(2).join(" ");
-
-  if (!orderId || !newStatus) {
-    bot.sendMessage(chatId, "Usage:\n/update ORDER_ID New Status");
-    return;
-  }
-
-  if (!orders[orderId]) {
-    bot.sendMessage(chatId, "❌ Order ID not found.");
-    return;
-  }
-
-  orders[orderId].status = newStatus;
-
-  bot.sendMessage(chatId,
-    `✅ Order ${orderId} updated to: ${newStatus}`
-  );
-}
-  
-  // =====================
-  // START
-  // =====================
-  if (text === "/start") {
-    delete userState[chatId];
-    bot.sendMessage(chatId, "Namaste 🙏 Welcome to Aroveda Bot!", mainMenu);
-  }
-
   // =====================
   // PRODUCTS
   // =====================
   else if (text === "🛍 Products") {
     bot.sendMessage(chatId,
-      "🌿 Our Products:\n1. Herbal Face Wash\n2. Ayurvedic Hair Oil\n3. Skin Glow Cream",
-      mainMenu
+`🌿 AROVEDA PRODUCT CATALOG
+
+1️⃣ Night Repair Cream
+2️⃣ Vitamin C Glow Serum
+3️⃣ Kumkumadi Face Oil
+4️⃣ Herbal Ubtan Face Wash
+5️⃣ Pure Aloe Vera Gel
+
+Use 📦 Order to place your order.`,
+    mainMenu
     );
   }
 
@@ -171,8 +111,14 @@ else if (text.startsWith("/update")) {
   // =====================
   else if (text === "💰 Price") {
     bot.sendMessage(chatId,
-      "💰 Price List:\nFace Wash - ₹199\nHair Oil - ₹249\nCream - ₹299",
-      mainMenu
+`💰 AROVEDA PRICE LIST
+
+Night Repair Cream — ₹399
+Vitamin C Glow Serum — ₹449
+Kumkumadi Face Oil — ₹499
+Herbal Ubtan Face Wash — ₹299
+Pure Aloe Vera Gel — ₹249`,
+    mainMenu
     );
   }
 
@@ -181,13 +127,21 @@ else if (text.startsWith("/update")) {
   // =====================
   else if (text === "ℹ About") {
     bot.sendMessage(chatId,
-      "🌿 Aroveda is a natural Ayurvedic skincare brand.",
-      mainMenu
+`🌿 About AROVEDA
+
+Aroveda is a natural Ayurvedic skincare brand focused on herbal beauty solutions.
+
+✔ Natural Ingredients
+✔ Chemical Free
+✔ Skin Friendly
+
+Made with traditional Ayurvedic formulas.`,
+    mainMenu
     );
   }
 
   // =====================
-  // ORDER STATUS CHECK
+  // ORDER STATUS
   // =====================
   else if (text === "📦 Order Status") {
     userState[chatId] = "checkOrder";
@@ -198,9 +152,15 @@ else if (text.startsWith("/update")) {
 
     if (orders[text]) {
       bot.sendMessage(chatId,
-        `📦 Order Found!\n\n🆔 ${text}\nName: ${orders[text].name}\nStatus: ${orders[text].status}
-        📅 Expected Delivery: ${orders[text].deliveryDate}`,
-        mainMenu
+`📦 Order Found!
+
+🆔 ${text}
+Product: ${orders[text].product}
+Name: ${orders[text].name}
+
+Status: ${orders[text].status}
+Delivery: ${orders[text].deliveryDate}`,
+      mainMenu
       );
     } else {
       bot.sendMessage(chatId, "❌ Order ID not found.", mainMenu);
@@ -210,232 +170,158 @@ else if (text.startsWith("/update")) {
   }
 
   // =====================
-// ORDER START
-// =====================
-else if (text === "📦 Order") {
-
-  userState[chatId] = "selectProduct";
-  userData[chatId] = {};
-  userAttempts[chatId] = 0;
-
-  bot.sendMessage(chatId, "🛍 Please select a product:", {
-    reply_markup: {
-      keyboard: [
-        ["Herbal Face Wash"],
-        ["Ayurvedic Hair Oil"],
-        ["Skin Glow Cream"],
-        ["Cancel"]
-      ],
-      resize_keyboard: true
-    }
-  });
-}
-
-// =====================
-// PRODUCT SELECTION
-// =====================
-else if (userState[chatId] === "selectProduct") {
-
-  const products = [
-    "Herbal Face Wash",
-    "Ayurvedic Hair Oil",
-    "Skin Glow Cream"
-  ];
-
-  if (!products.includes(text)) {
-    bot.sendMessage(chatId, "❌ Please select product from buttons only.");
-    return;
-  }
-
-  userData[chatId].product = text;
-  userState[chatId] = "quantity";
-
-  bot.sendMessage(chatId, "🔢 Enter quantity (1-5):");
-}
-
-// =====================
-// QUANTITY STEP
-// =====================
-else if (userState[chatId] === "quantity") {
-
-  const qty = parseInt(text);
-
-  if (isNaN(qty) || qty < 1 || qty > 5) {
-    bot.sendMessage(chatId, "❌ Enter valid quantity between 1 to 5.");
-    return;
-  }
-
-  userData[chatId].quantity = qty;
-  userState[chatId] = "name";
-
-  bot.sendMessage(chatId, "📛 Enter your Name:");
-}
-  
+  // ORDER START
   // =====================
-  // NAME STEP
+  else if (text === "📦 Order") {
+
+    userState[chatId] = "selectProduct";
+    userData[chatId] = {};
+
+    bot.sendMessage(chatId, "🛍 Please select product:", {
+      reply_markup: {
+        keyboard: [
+          ["Night Repair Cream"],
+          ["Vitamin C Glow Serum"],
+          ["Kumkumadi Face Oil"],
+          ["Herbal Ubtan Face Wash"],
+          ["Pure Aloe Vera Gel"],
+          ["Cancel"]
+        ],
+        resize_keyboard: true
+      }
+    });
+  }
+
+  // =====================
+  // PRODUCT SELECT
+  // =====================
+  else if (userState[chatId] === "selectProduct") {
+
+    const products = [
+      "Night Repair Cream",
+      "Vitamin C Glow Serum",
+      "Kumkumadi Face Oil",
+      "Herbal Ubtan Face Wash",
+      "Pure Aloe Vera Gel"
+    ];
+
+    if (!products.includes(text)) {
+      bot.sendMessage(chatId, "❌ Please select product from buttons.");
+      return;
+    }
+
+    userData[chatId].product = text;
+    userState[chatId] = "quantity";
+
+    bot.sendMessage(chatId, "🔢 Enter quantity (1-5):");
+  }
+
+  // =====================
+  // QUANTITY
+  // =====================
+  else if (userState[chatId] === "quantity") {
+
+    const qty = parseInt(text);
+
+    if (isNaN(qty) || qty < 1 || qty > 5) {
+      bot.sendMessage(chatId, "❌ Enter quantity between 1-5.");
+      return;
+    }
+
+    userData[chatId].quantity = qty;
+    userState[chatId] = "name";
+
+    bot.sendMessage(chatId, "👤 Enter your Name:");
+  }
+
+  // =====================
+  // NAME
   // =====================
   else if (userState[chatId] === "name") {
 
-    if (!/^[A-Za-z ]{2,30}$/.test(text)) {
-      userAttempts[chatId]++;
-
-      if (userAttempts[chatId] >= 3) {
-        delete userState[chatId];
-        bot.sendMessage(chatId, "❌ Too many invalid attempts. Order cancelled.", mainMenu);
-        return;
-      }
-
-      bot.sendMessage(chatId, "❌ Enter valid name (letters only).");
-      return;
-    }
-
     userData[chatId].name = text;
     userState[chatId] = "address";
-    userAttempts[chatId] = 0;
 
-    bot.sendMessage(chatId, "🏠 Please enter your Address:");
+    bot.sendMessage(chatId, "🏠 Enter your Address:");
   }
 
   // =====================
-// ADDRESS STEP (STRONG VALIDATION)
-// =====================
-else if (userState[chatId] === "address") {
+  // ADDRESS
+  // =====================
+  else if (userState[chatId] === "address") {
 
-  // Only letters, numbers, space, comma, dash, slash allowed
-  const addressRegex = /^[A-Za-z0-9 ,\-\/]{10,100}$/;
+    userData[chatId].address = text;
+    userState[chatId] = "phone";
 
-  if (!addressRegex.test(text)) {
-    userAttempts[chatId]++;
+    bot.sendMessage(chatId, "📞 Enter 10 digit phone number:");
+  }
 
-    if (userAttempts[chatId] >= 3) {
-      delete userState[chatId];
-      delete userAttempts[chatId];
-      bot.sendMessage(chatId, "❌ Too many invalid attempts. Order cancelled.", mainMenu);
+  // =====================
+  // PHONE
+  // =====================
+  else if (userState[chatId] === "phone") {
+
+    if (!/^[6-9][0-9]{9}$/.test(text)) {
+      bot.sendMessage(chatId, "❌ Invalid phone number.");
       return;
     }
 
-    bot.sendMessage(chatId, 
-      "❌ Invalid address.\nUse letters, numbers, comma or dash only.\nMinimum 10 characters."
-    );
-    return;
-  }
+    userData[chatId].phone = text;
 
-  userData[chatId].address = text;
-  userState[chatId] = "phone";
-  userAttempts[chatId] = 0;
+    const today = new Date();
+    today.setDate(today.getDate() + 5);
+    const deliveryDate = today.toDateString();
 
-  bot.sendMessage(chatId, "📞 Enter 10 digit Indian Phone Number:");
-}
+    const orderId = generateOrderId();
 
- // =====================
-// PHONE STEP
-// =====================
- else if (userState[chatId] === "phone") {
+    orders[orderId] = {
+      product: userData[chatId].product,
+      quantity: userData[chatId].quantity,
+      name: userData[chatId].name,
+      address: userData[chatId].address,
+      phone: userData[chatId].phone,
+      deliveryDate: deliveryDate,
+      status: "Confirmed ✅"
+    };
 
-
-  if (!/^[6-9][0-9]{9}$/.test(text)) {
-    userAttempts[chatId] = (userAttempts[chatId] || 0) + 1;
-
-    if (userAttempts[chatId] >= 3) {
-      delete userState[chatId];
-      delete userAttempts[chatId];
-      bot.sendMessage(chatId, "❌ Too many invalid attempts. Order cancelled.");
-      return;
-    }
-
-    bot.sendMessage(chatId, "❌ Invalid phone. Must start with 6-9 and be 10 digits.");
-    return;
-  }
-
-  // ✅ VALID PHONE
-  userData[chatId].phone = text;
-
-  // ✅ Calculate delivery date
-  const today = new Date();
-  today.setDate(today.getDate() + 5);
-  const deliveryDate = today.toDateString();
-  userData[chatId].deliveryDate = deliveryDate;
-
-  // ✅ Generate Order ID
-  const orderId = generateOrderId();
-  userData[chatId].orderId = orderId;
-
-  // ✅ Save Order
- orders[orderId] = {
-  product: userData[chatId].product,
-  quantity: userData[chatId].quantity,
-  name: userData[chatId].name,
-  address: userData[chatId].address,
-  phone: userData[chatId].phone,
-  deliveryDate: userData[chatId].deliveryDate,
-  status: "Confirmed ✅"
-};
-
-  // ✅ Send Confirmation
-  bot.sendMessage(chatId,
+    bot.sendMessage(chatId,
 `✅ Order Confirmed!
 
-🆔 Order ID: ${orderId}
+Order ID: ${orderId}
 
-🛍 Product: ${userData[chatId].product}
-🔢 Quantity: ${userData[chatId].quantity}
+Product: ${userData[chatId].product}
+Quantity: ${userData[chatId].quantity}
 
-👤 Name: ${userData[chatId].name}
-🏠 Address: ${userData[chatId].address}
-📞 Phone: ${userData[chatId].phone}
-
-📅 Expected Delivery: ${deliveryDate}
+Delivery: ${deliveryDate}
 
 Please save your Order ID.`,
-  mainMenu
-  );
-
-// =====================
-// 🔔 ADMIN NOTIFICATION
-// =====================
-bot.sendMessage(ADMIN_ID,
-`🆕 NEW ORDER RECEIVED!
-
-🆔 Order ID: ${orderId}
-
-🛍 Product: ${userData[chatId].product}
-🔢 Quantity: ${userData[chatId].quantity}
-
-👤 Name: ${userData[chatId].name}
-🏠 Address: ${userData[chatId].address}
-📞 Phone: ${userData[chatId].phone}
-
-📅 Delivery: ${deliveryDate}`
-);
-   
-  delete userState[chatId];
-  delete userAttempts[chatId];
-}
-
-// =====================
-// SMART AUTO REPLY
-// =====================
-else if (lowerText.includes("kab ayega") || 
-         lowerText.includes("kab aayega") ||
-         lowerText.includes("delivery") ||
-         lowerText.includes("order kab")) {
-
-  bot.sendMessage(chatId,
-    "📦 Delivery usually takes 3-5 working days.\n\nTo check exact status, click '📦 Order Status' and enter your Order ID.",
     mainMenu
-  );
-}
-  
-  // =====================
-  // DEFAULT
-  // =====================
+    );
+
+    bot.sendMessage(ADMIN_ID,
+`🆕 NEW ORDER
+
+Order ID: ${orderId}
+
+Product: ${userData[chatId].product}
+Qty: ${userData[chatId].quantity}
+
+Name: ${userData[chatId].name}
+Phone: ${userData[chatId].phone}
+
+Delivery: ${deliveryDate}`
+    );
+
+    delete userState[chatId];
+  }
+
   else {
     bot.sendMessage(chatId,
-      "Please select an option from menu below 👇",
+      "Please select option from menu 👇",
       mainMenu
     );
   }
 
 });
 
-console.log("Bot is running...");
+console.log("Aroveda Bot running...");
